@@ -1,0 +1,141 @@
+/* src/pages/ProfileSetup.css */
+.profile-setup-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+}
+
+.profile-setup-card {
+  background: var(--c-bg);
+  border: 1px solid var(--c-border);
+  border-radius: 24px;
+  padding: 40px;
+  width: 100%;
+  max-width: 800px;
+  box-shadow: var(--shadow-soft-lg);
+  text-align: center;
+}
+
+.profile-setup-card h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.profile-setup-card p {
+  color: var(--c-text-secondary);
+  margin-bottom: 32px;
+}
+
+.progress-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 40px;
+}
+
+.step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: var(--c-text-secondary);
+  transition: all 0.4s ease;
+}
+
+.step.active {
+  color: var(--c-primary);
+  font-weight: 600;
+}
+
+.step-number {
+  height: 40px;
+  width: 40px;
+  border-radius: 50%;
+  background-color: var(--c-bg);
+  border: 2px solid var(--c-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  margin-bottom: 8px;
+  transition: all 0.4s ease;
+}
+
+.step.active .step-number {
+  background: var(--c-primary);
+  color: white;
+  border-color: var(--c-primary);
+}
+
+.step-label {
+  font-size: 0.9rem;
+}
+
+.progress-line {
+  flex-grow: 1;
+  height: 2px;
+  background-color: var(--c-border);
+  margin: 0 16px;
+  margin-bottom: 24px; /* Align with step labels */
+}
+
+.form-content {
+  text-align: left;
+}
+
+.form-content h2 {
+  font-size: 1.5rem;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--c-border);
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.form-navigation {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 40px;
+  padding-top: 24px;
+  border-top: 1px solid var(--c-border);
+}
+
+.nav-button {
+  padding: 12px 32px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 1rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.nav-button.prev {
+  background-color: var(--c-bg);
+  color: var(--c-text-secondary);
+  border: 1px solid var(--c-border);
+}
+.nav-button.prev:hover {
+  background-color: var(--c-bg-alt);
+}
+
+.nav-button.next {
+  background: var(--c-gradient);
+  color: white;
+}
+.nav-button.next:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-soft-lg);
+}
+
+@media (max-width: 600px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+}
