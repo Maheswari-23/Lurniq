@@ -25,15 +25,7 @@ const Signup = () => {
             <label htmlFor="name">Full Name</label>
             <input type="text" id="name" placeholder="Enter your full name" required />
           </div>
-          <div className="form-group">
-            <label htmlFor="email">Email Address</label>
-            <input type="email" id="email" placeholder="Enter your email" required />
-          </div>
-          <div className="form-group">
-            <label htmlFor="password">Password</label>
-            <input type="password" id="password" placeholder="Create a password" required />
-          </div>
-          <div className="form-group">
+            <div className="form-group">
             <label htmlFor="age-group">Age Group</label>
             <select id="age-group" required>
               <option value="">Select your age group</option>
@@ -44,6 +36,15 @@ const Signup = () => {
               <option value="25+">25+ Years</option>
             </select>
           </div>
+          <div className="form-group">
+            <label htmlFor="email">Email Address</label>
+            <input type="email" id="email" placeholder="Enter your email" required />
+          </div>
+          <div className="form-group">
+            <label htmlFor="password">Password</label>
+            <input type="password" id="password" placeholder="Create a password" required />
+          </div>
+        
 
           <button type="submit" className="form-button">Sign Up</button>
         </form>
