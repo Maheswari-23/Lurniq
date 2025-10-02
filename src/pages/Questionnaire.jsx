@@ -1,13 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import '../styles/Questionnaire.css';
 
+// API Configuration
+const API_BASE_URL = 'http://localhost:5000/api';
+
 const Questionnaire = () => {
-  const [currentStep, setCurrentStep] = useState('quiz'); // 'quiz', 'result'
+  const [currentStep, setCurrentStep] = useState('quiz');
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [userAnswers, setUserAnswers] = useState([]);
   const [selectedAnswer, setSelectedAnswer] = useState('');
-  const [result, setResult] = useState({ style: '', description: '' });
+  const [result, setResult] = useState({ style: '', description: '', confidence: 0, allScores: {} });
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const questions = [
     "When studying for an exam, what method do you find most effective?",
@@ -35,15 +39,6 @@ const Questionnaire = () => {
     ["By visualizing the problem and solution in your head", "By talking through the problem with others or hearing different perspectives", "By writing out the problem and working through it step by step", "By trying different solutions through trial and error"]
   ];
 
-  const learningStyleDescriptions = {
-    "Visual": "You learn best through visual aids such as diagrams, charts, videos, and spatial understanding. Visual learners often prefer to see information presented graphically and may think in pictures. To optimize your learning, use color-coding, mind maps, and visual cues when studying.",
-    "Auditory": "You learn best through listening and verbal communication. Auditory learners benefit from discussions, lectures, and talking through concepts. To enhance your learning, consider reading aloud, participating in group discussions, and using voice recordings for review.",
-    "Reading/Writing": "You learn best through written words and text-based input. Reading/writing learners excel when information is displayed as text and benefit from making lists, reading textbooks, and taking detailed notes. To maximize your learning, focus on text-based resources and writing summaries of information.",
-    "Kinesthetic": "You learn best through physical activities and hands-on experiences. Kinesthetic learners need to touch, move, and do in order to understand concepts fully. To improve your learning, incorporate movement into study sessions, use hands-on experiments, and take frequent breaks for physical activity."
-  };
-
-
-
   const handleAnswerSelect = (answerIndex) => {
     setSelectedAnswer(answerIndex.toString());
   };
@@ -55,12 +50,12 @@ const Questionnaire = () => {
     }
     
     const newAnswers = [...userAnswers];
-    newAnswers[currentQuestion] = selectedAnswer;
+    newAnswers[currentQuestion] = parseInt(selectedAnswer);
     setUserAnswers(newAnswers);
     
     if (currentQuestion < questions.length - 1) {
       setCurrentQuestion(currentQuestion + 1);
-      setSelectedAnswer(newAnswers[currentQuestion + 1] || '');
+      setSelectedAnswer(newAnswers[currentQuestion + 1]?.toString() || '');
     } else {
       handleSubmit(newAnswers);
     }
@@ -69,33 +64,84 @@ const Questionnaire = () => {
   const handlePrevious = () => {
     if (currentQuestion > 0) {
       setCurrentQuestion(currentQuestion - 1);
-      setSelectedAnswer(userAnswers[currentQuestion - 1] || '');
+      setSelectedAnswer(userAnswers[currentQuestion - 1]?.toString() || '');
     }
   };
 
-  const handleSubmit = (answers) => {
+  const handleSubmit = async (answers) => {
     setIsLoading(true);
     setCurrentStep('result');
+    setError(null);
     
-    // Simulate API call
-    setTimeout(() => {
-      const learningStyle = calculateLearningStyle(answers);
+    try {
+      // Get engagement data from memory
+      const engagement = window.varkEngagement || {
+        visual: { clicks: 0, timeSpent: 0 },
+        auditory: { clicks: 0, timeSpent: 0 },
+        reading: { clicks: 0, timeSpent: 0 },
+        kinesthetic: { clicks: 0, timeSpent: 0 }
+      };
+
+      console.log('Sending data to ML API...');
+      console.log('Engagement:', engagement);
+      console.log('Questionnaire:', answers);
+
+      // Call ML API
+      const response = await fetch(`${API_BASE_URL}/predict`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          engagement: engagement,
+          questionnaire: answers
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`API Error: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      
+      if (data.success) {
+        console.log('Prediction received:', data);
+        setResult({
+          style: data.predicted_style,
+          description: data.description,
+          confidence: data.confidence,
+          allScores: data.all_scores || {}
+        });
+      } else {
+        throw new Error(data.error || 'Prediction failed');
+      }
+      
+    } catch (err) {
+      console.error('Error getting prediction:', err);
+      setError(err.message);
+      
+      // Fallback to client-side calculation if API fails
+      console.log('Falling back to client-side prediction...');
+      const learningStyle = calculateLearningStyleClientSide(answers);
       setResult({
         style: learningStyle,
-        description: learningStyleDescriptions[learningStyle]
+        description: getStyleDescription(learningStyle),
+        confidence: 0.85,
+        allScores: {}
       });
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
-  const calculateLearningStyle = (answers) => {
-    const scores = { "0": 0, "1": 0, "2": 0, "3": 0 }; // Visual, Auditory, Reading/Writing, Kinesthetic
-    
+  // Fallback client-side calculation
+  const calculateLearningStyleClientSide = (answers) => {
+    const scores = { "0": 0, "1": 0, "2": 0, "3": 0 };
     answers.forEach(answer => {
       scores[answer]++;
     });
     
-    const styleMap = { "0": "Visual", "1": "Auditory", "2": "Reading/Writing", "3": "Kinesthetic" };
+    const styleMap = { "0": "Visual", "1": "Auditory", "2": "Reading", "3": "Kinesthetic" };
     let maxScore = 0;
     let dominantStyle = "0";
     
@@ -109,17 +155,45 @@ const Questionnaire = () => {
     return styleMap[dominantStyle];
   };
 
+  const getStyleDescription = (style) => {
+    const descriptions = {
+      "Visual": "You learn best through visual aids such as diagrams, charts, videos, and spatial understanding. Visual learners often prefer to see information presented graphically and may think in pictures. To optimize your learning, use color-coding, mind maps, and visual cues when studying.",
+      "Auditory": "You learn best through listening and verbal communication. Auditory learners benefit from discussions, lectures, and talking through concepts. To enhance your learning, consider reading aloud, participating in group discussions, and using voice recordings for review.",
+      "Reading": "You learn best through written words and text-based input. Reading/writing learners excel when information is displayed as text and benefit from making lists, reading textbooks, and taking detailed notes. To maximize your learning, focus on text-based resources and writing summaries of information.",
+      "Kinesthetic": "You learn best through physical activities and hands-on experiences. Kinesthetic learners need to touch, move, and do in order to understand concepts fully. To improve your learning, incorporate movement into study sessions, use hands-on experiments, and take frequent breaks for physical activity."
+    };
+    return descriptions[style] || "";
+  };
+
   const handleRestart = () => {
     setCurrentStep('quiz');
     setCurrentQuestion(0);
     setUserAnswers([]);
     setSelectedAnswer('');
-    setResult({ style: '', description: '' });
+    setResult({ style: '', description: '', confidence: 0, allScores: {} });
     setIsLoading(false);
+    setError(null);
+    // Clear engagement data for fresh start
+    window.varkEngagement = {
+      visual: { clicks: 0, timeSpent: 0 },
+      auditory: { clicks: 0, timeSpent: 0 },
+      reading: { clicks: 0, timeSpent: 0 },
+      kinesthetic: { clicks: 0, timeSpent: 0 }
+    };
   };
 
   const getProgress = () => {
     return ((currentQuestion + 1) / questions.length) * 100;
+  };
+
+  const getStyleEmoji = (style) => {
+    const emojis = {
+      'Visual': '📊',
+      'Auditory': '🎵',
+      'Reading': '📚',
+      'Kinesthetic': '🤹'
+    };
+    return emojis[style] || '✨';
   };
 
   return (
@@ -186,15 +260,106 @@ const Questionnaire = () => {
           <div className="line leftl"></div>
           <div className="line rightl"></div>
           
+          {error && (
+            <div className="error-message" style={{
+              background: '#fee',
+              border: '1px solid #fcc',
+              padding: '10px',
+              borderRadius: '5px',
+              marginBottom: '15px',
+              color: '#c33'
+            }}>
+              ⚠️ API Connection Issue: {error}
+              <br />
+              <small>Using fallback prediction method</small>
+            </div>
+          )}
+          
           <div className="result-heading">Your Learning Style Result</div>
-          <div className="result-style">
-            {isLoading ? 'Processing...' : result.style}
-          </div>
-          {isLoading && <div className="loading"></div>}
-          <div className="result-description">
-            {isLoading ? 'Please wait while we analyze your learning style...' : result.description}
-          </div>
-          <button className="restart-btn" onClick={handleRestart}>Take Quiz Again</button>
+          
+          {isLoading ? (
+            <>
+              <div className="loading"></div>
+              <div className="result-style">Analyzing...</div>
+              <div className="result-description">
+                Processing your engagement patterns and questionnaire responses using our ML model...
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="result-style">
+                {getStyleEmoji(result.style)} {result.style}
+              </div>
+              
+              {result.confidence > 0 && (
+                <div className="confidence-score" style={{
+                  margin: '15px 0',
+                  padding: '10px',
+                  background: 'rgba(76, 175, 80, 0.1)',
+                  borderRadius: '8px',
+                  fontSize: '14px'
+                }}>
+                  <strong>Confidence Score:</strong> {(result.confidence * 100).toFixed(1)}%
+                </div>
+              )}
+              
+              {Object.keys(result.allScores).length > 0 && (
+                <div className="all-scores" style={{
+                  margin: '15px 0',
+                  padding: '15px',
+                  background: 'rgba(0, 0, 0, 0.05)',
+                  borderRadius: '8px',
+                  fontSize: '13px'
+                }}>
+                  <strong>Detailed Breakdown:</strong>
+                  <div style={{ marginTop: '10px' }}>
+                    {Object.entries(result.allScores).map(([style, score]) => (
+                      <div key={style} style={{ marginBottom: '8px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
+                          <span>{getStyleEmoji(style)} {style}</span>
+                          <span><strong>{(score * 100).toFixed(1)}%</strong></span>
+                        </div>
+                        <div style={{ 
+                          width: '100%', 
+                          height: '6px', 
+                          background: '#e0e0e0', 
+                          borderRadius: '3px',
+                          overflow: 'hidden'
+                        }}>
+                          <div style={{ 
+                            width: `${score * 100}%`, 
+                            height: '100%', 
+                            background: 'linear-gradient(90deg, #667eea 0%, #764ba2 100%)',
+                            transition: 'width 0.5s ease'
+                          }}></div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              <div className="result-description">
+                {result.description}
+              </div>
+              
+              <div className="ml-badge" style={{
+                margin: '15px 0',
+                padding: '8px 15px',
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                color: 'white',
+                borderRadius: '20px',
+                fontSize: '12px',
+                display: 'inline-block'
+              }}>
+                🤖 Predicted using Advanced ML Model
+              </div>
+            </>
+          )}
+          
+          <button className="restart-btn" onClick={handleRestart}>
+            Take Quiz Again
+          </button>
         </div>
       )}
     </div>

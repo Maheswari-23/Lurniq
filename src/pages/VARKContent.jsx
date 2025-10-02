@@ -3,9 +3,10 @@ import { DndContext, useDraggable, useDroppable } from "@dnd-kit/core";
 import { useNavigate } from 'react-router-dom';
 import '../styles/VARKContent.css';
 
-// --- Helper Components for Drag-and-Drop ---
+// API Configuration
+const API_BASE_URL = 'http://localhost:5000/api';
 
-// A reusable component for our draggable labels
+// --- Helper Components for Drag-and-Drop ---
 function DraggableLabel({ id, children }) {
   const { attributes, listeners, setNodeRef, transform } = useDraggable({ id });
   const style = transform
@@ -28,15 +29,10 @@ function DraggableLabel({ id, children }) {
   );
 }
 
-// A reusable component for the areas where we can drop labels
 function DroppableArea({ id, children }) {
   const { setNodeRef } = useDroppable({ id });
-
   return (
-    <div
-      ref={setNodeRef}
-      className="droppable-area"
-    >
+    <div ref={setNodeRef} className="droppable-area">
       {children}
     </div>
   );
@@ -55,7 +51,7 @@ const VARKContent = () => {
   });
   const [activeType, setActiveType] = useState(null);
 
-  // Kinesthetic activity: ORDERING STEPS
+  // Kinesthetic activity
   const [droppedItems, setDroppedItems] = useState({
     "step-1": null,
     "step-2": null,
@@ -68,11 +64,43 @@ const VARKContent = () => {
     (label) => !droppedLabels.includes(label)
   );
 
-  // Navigation function - Navigate to Questionnaire
+  // Load engagement data from memory on mount
+  useEffect(() => {
+    const savedEngagement = window.varkEngagement;
+    if (savedEngagement) {
+      setEngagement(savedEngagement);
+      console.log('Loaded engagement data:', savedEngagement);
+    }
+  }, []);
+
+  // Save engagement to memory whenever it changes
+  useEffect(() => {
+    window.varkEngagement = engagement;
+  }, [engagement]);
+
+  // Navigation to questionnaire with engagement data
   const handleQuestionnaireClick = (learningStyle, event) => {
-    event.stopPropagation(); // Prevent card click event
+    event.stopPropagation();
+    
+    // Calculate final time for active section
+    if (activeType) {
+      const now = Date.now();
+      const duration = Math.floor((now - startTime) / 1000);
+      const finalEngagement = {
+        ...engagement,
+        [activeType]: {
+          ...engagement[activeType],
+          timeSpent: engagement[activeType].timeSpent + duration,
+        },
+      };
+      
+      // Save to memory before navigation
+      window.varkEngagement = finalEngagement;
+      console.log(`Navigating to questionnaire from ${learningStyle} learning style`);
+      console.log('Final engagement data:', finalEngagement);
+    }
+    
     navigate('/questionnaire');
-    console.log(`Navigating to questionnaire from ${learningStyle} learning style`);
   };
 
   // Tracking clicks and time
@@ -96,6 +124,7 @@ const VARKContent = () => {
     }));
   };
 
+  // Handle page unload
   useEffect(() => {
     const handleBeforeUnload = () => {
       if (activeType) {
@@ -108,14 +137,12 @@ const VARKContent = () => {
             timeSpent: engagement[activeType].timeSpent + duration,
           },
         };
-        console.log("Final Engagement:", finalEngagement);
-      } else {
-        console.log("Final Engagement:", engagement);
+        window.varkEngagement = finalEngagement;
+        console.log("Final Engagement on unload:", finalEngagement);
       }
     };
     window.addEventListener("beforeunload", handleBeforeUnload);
-    return () =>
-      window.removeEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [activeType, startTime, engagement]);
 
   // Handle drag and drop
@@ -224,8 +251,6 @@ const VARKContent = () => {
           <p className="card-description">Learn through detailed text, notes, and written explanations.</p>
           
           <div className="reading-content">
-            <img src="" alt="Water Cycle Diagram - Add your image here" className="content-image" />
-            
             <h3>What Is the Water Cycle?</h3>
             <p>The water cycle is the continuous movement of water on Earth. The sun heats water bodies, turning water into vapor through evaporation.</p>
 
@@ -291,13 +316,10 @@ const VARKContent = () => {
             </p>
 
             <div className="kinesthetic-activity">
-              {/* Step slots */}
               <div className="step-slots">
                 <DroppableArea id="step-1">
                   {droppedItems["step-1"] ? (
-                    <div className="dropped-item">
-                      {droppedItems["step-1"]}
-                    </div>
+                    <div className="dropped-item">{droppedItems["step-1"]}</div>
                   ) : (
                     <span className="step-placeholder">Step 1</span>
                   )}
@@ -305,9 +327,7 @@ const VARKContent = () => {
 
                 <DroppableArea id="step-2">
                   {droppedItems["step-2"] ? (
-                    <div className="dropped-item">
-                      {droppedItems["step-2"]}
-                    </div>
+                    <div className="dropped-item">{droppedItems["step-2"]}</div>
                   ) : (
                     <span className="step-placeholder">Step 2</span>
                   )}
@@ -315,16 +335,13 @@ const VARKContent = () => {
 
                 <DroppableArea id="step-3">
                   {droppedItems["step-3"] ? (
-                    <div className="dropped-item">
-                      {droppedItems["step-3"]}
-                    </div>
+                    <div className="dropped-item">{droppedItems["step-3"]}</div>
                   ) : (
                     <span className="step-placeholder">Step 3</span>
                   )}
                 </DroppableArea>
               </div>
 
-              {/* Labels to drag */}
               <div className="drag-labels-container">
                 {availableLabels.length > 0 ? (
                   availableLabels.map((label) => (
@@ -337,7 +354,6 @@ const VARKContent = () => {
                 )}
               </div>
 
-              {/* Feedback check */}
               {droppedItems["step-1"] &&
                 droppedItems["step-2"] &&
                 droppedItems["step-3"] && (
