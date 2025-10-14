@@ -1,35 +1,59 @@
-/* src/pages/ProfileSetup.css */
-.profile-setup-container {
+/* src/pages/ProfileSetup.module.css */
+
+:root {
+  --c-primary: #7B61FF;
+  --c-secondary: #F97AFE;
+  --c-dark-violet: #4c1d95;
+  --c-gradient: linear-gradient(90deg, var(--c-secondary) 0%, var(--c-primary) 100%);
+  --c-bg: #FFFFFF;
+  --c-bg-alt: #F9FAFB;
+  --c-text-primary: #111827;
+  --c-text-secondary: #6B7280;
+  --c-border: #E5E7EB;
+  --shadow-soft: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  --shadow-soft-lg: 0 10px 25px -5px rgba(123, 97, 255, 0.1), 0 8px 10px -6px rgba(123, 97, 255, 0.1);
+}
+
+.container {
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 40px 24px;
+  background: var(--c-bg);
 }
 
-.profile-setup-card {
-  background: var(--c-bg);
-  border: 1px solid var(--c-border);
+.cardWrapper {
+  background: var(--c-gradient);
   border-radius: 24px;
-  padding: 40px;
+  padding: 3px;
   width: 100%;
   max-width: 800px;
-  box-shadow: var(--shadow-soft-lg);
+}
+
+.card {
+  background: var(--c-bg);
+  border-radius: 22px;
+  padding: 40px;
+  width: 100%;
   text-align: center;
 }
 
-.profile-setup-card h1 {
+.heading {
   font-size: 2rem;
   font-weight: 700;
   margin-bottom: 8px;
+  color: var(--c-text-primary);
 }
 
-.profile-setup-card p {
+.subtitle {
   color: var(--c-text-secondary);
   margin-bottom: 32px;
+  font-size: 14px;
 }
 
-.progress-indicator {
+/* Progress Indicator Styles */
+.progressIndicator {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -44,12 +68,12 @@
   transition: all 0.4s ease;
 }
 
-.step.active {
+.stepActive {
   color: var(--c-primary);
   font-weight: 600;
 }
 
-.step-number {
+.stepNumber {
   height: 40px;
   width: 40px;
   border-radius: 50%;
@@ -63,42 +87,80 @@
   transition: all 0.4s ease;
 }
 
-.step.active .step-number {
-  background: var(--c-primary);
-  color: white;
-  border-color: var(--c-primary);
+.stepNumberActive {
+  background: var(--c-gradient);
+  color: var(--c-bg);
+  border-color: transparent;
 }
 
-.step-label {
+.stepLabel {
   font-size: 0.9rem;
 }
 
-.progress-line {
+.progressLine {
   flex-grow: 1;
   height: 2px;
   background-color: var(--c-border);
   margin: 0 16px;
-  margin-bottom: 24px; /* Align with step labels */
+  margin-bottom: 24px;
 }
 
-.form-content {
+/* Form Content Styles */
+.formContent {
   text-align: left;
 }
 
-.form-content h2 {
+.formHeading {
   font-size: 1.5rem;
   margin-bottom: 24px;
   padding-bottom: 16px;
   border-bottom: 1px solid var(--c-border);
+  color: var(--c-text-primary);
 }
 
-.form-grid {
+.formGrid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 24px;
 }
 
-.form-navigation {
+.formGroup {
+  margin-bottom: 20px;
+}
+
+.label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--c-text-primary);
+  margin-bottom: 8px;
+}
+
+.input,
+.select {
+  width: 100%;
+  padding: 12px 15px;
+  font-size: 14px;
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+  outline: none;
+  transition: border-color 0.3s, box-shadow 0.3s;
+  box-sizing: border-box;
+}
+
+.select {
+  background-color: var(--c-bg);
+  cursor: pointer;
+}
+
+.input:focus,
+.select:focus {
+  border-color: var(--c-primary);
+  box-shadow: 0 0 0 3px rgba(123, 97, 255, 0.1);
+}
+
+/* Form Navigation Styles */
+.formNavigation {
   display: flex;
   justify-content: space-between;
   margin-top: 40px;
@@ -106,7 +168,7 @@
   border-top: 1px solid var(--c-border);
 }
 
-.nav-button {
+.navButton {
   padding: 12px 32px;
   border-radius: 12px;
   font-weight: 600;
@@ -116,26 +178,54 @@
   transition: all 0.3s ease;
 }
 
-.nav-button.prev {
+.prevButton {
   background-color: var(--c-bg);
   color: var(--c-text-secondary);
   border: 1px solid var(--c-border);
 }
-.nav-button.prev:hover {
+
+.prevButton:hover {
   background-color: var(--c-bg-alt);
 }
 
-.nav-button.next {
+.nextButton {
   background: var(--c-gradient);
-  color: white;
+  color: var(--c-bg);
 }
-.nav-button.next:hover {
+
+.nextButton:hover {
   transform: translateY(-2px);
   box-shadow: var(--shadow-soft-lg);
 }
 
-@media (max-width: 600px) {
-  .form-grid {
+/* Responsive Design */
+@media (max-width: 768px) {
+  .formGrid {
     grid-template-columns: 1fr;
+  }
+
+  .card {
+    padding: 24px;
+  }
+
+  .heading {
+    font-size: 1.5rem;
+  }
+
+  .formHeading {
+    font-size: 1.25rem;
+  }
+
+  .progressIndicator {
+    flex-wrap: wrap;
+  }
+
+  .stepLabel {
+    font-size: 0.75rem;
+  }
+
+  .stepNumber {
+    height: 36px;
+    width: 36px;
   }
 }
